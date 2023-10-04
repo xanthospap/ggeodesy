@@ -1,6 +1,7 @@
-/// @file units.hpp
-/// @brief A list of frequently used geodetic functions for unit conversion,
-///        mostly targeted on angular units.
+/** @file units.hpp
+ * A list of frequently used geodetic functions for unit conversion, mostly 
+ * targeted on angular units.
+ */
 
 #ifndef __NGPT_GEODESY_UNITS_HPP__
 #define __NGPT_GEODESY_UNITS_HPP__

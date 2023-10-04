@@ -1,30 +1,29 @@
 #include "geodesy.hpp"
 #include <cassert>
 
-/// @brief Given the geodetic coordinates of a reference point, return the
-///        matrix that turns any vector from the ference point to point P to
-///        topocentric coordinates (e,n,u)
-Eigen::Matrix<double, 3, 3> dso::topocentric_matrix(double lambda,
-                                                    double phi) noexcept {
-  const double cf = std::cos(phi);
-  const double sf = std::sin(phi);
-  const double cl = std::cos(lambda);
-  const double sl = std::sin(lambda);
+Eigen::Matrix<double, 3, 3> dso::topocentric_matrix(double lon,
+                                                    double lat) noexcept {
+  const double cf = std::cos(lat);
+  const double sf = std::sin(lat);
+  const double cl = std::cos(lon);
+  const double sl = std::sin(lon);
 
-  // unit vector along east
-  const double d00 = -sl;
-  const double d01 = cl;
-  const double d02 = 0e0;
-  // unit vector along north
-  const double d10 = -sf * cl;
-  const double d11 = -sf * sl;
-  const double d12 = cf;
-  // unit vector along up
-  const double d20 = cf * cl;
-  const double d21 = cf * sl;
-  const double d22 = sf;
+  /* unit vector along east */
+  const double e0 = -sl;
+  const double e1 = cl;
+  const double e2 = 0e0;
 
-  // Remember, this is column-wise
-  double data[9] = {d00, d10, d20, d01, d11, d21, d02, d12, d22};
-  return Eigen::Map<Eigen::Matrix<double, 3, 3>>(data, 3, 3);
+  /* unit vector along north */
+  const double n0 = -sf * cl;
+  const double n1 = -sf * sl;
+  const double n2 = cf;
+
+  /* unit vector along up */
+  const double u0 = cf * cl;
+  const double u1 = cf * sl;
+  const double u2 = sf;
+
+  /* Rotation matrix is: R = [n^t, e^T, u^T] */
+  return (Eigen::Matrix<double, 3, 3>() << n0, n1, n2, e0, e1, e2, u0, u1, u2)
+      .finished();
 }

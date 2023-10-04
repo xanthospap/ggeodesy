@@ -1,0 +1,31 @@
+\colorlet{myred}{red!90!black}
+\colorlet{myblue}{blue!80!black}
+\tikzstyle{vector}=[-stealth,myblue,thick,line cap=round]
+\tdplotsetmaincoords{60}{110}
+\begin{tikzpicture}[scale=5,tdplot_main_coords]
+  % variables
+  \def\rvec{.9}
+  \def\thetavec{50}
+  \def\phivec{60}
+  
+  % axes
+  \coordinate (O) at (0,0,0);
+  \draw[thick,->] (0,0,0) -- (1,0,0) node[left=-1]{$x$};
+  \draw[thick,->] (0,0,0) -- (0,1,0) node[above=-.5]{$y$};
+  \draw[thick,->] (0,0,0) -- (0,0,1) node[left=-1]{$z$};
+  
+  % vectors
+  \tdplotsetcoord{P}{\rvec}{\thetavec}{\phivec}
+  \draw[vector] (O) -- (P) node[above right=-.5] {P};
+  \draw[dashed] (O)  -- (Pxy);
+  \draw[dashed] (P)  -- (Pxy);
+  \draw[dashed] (Py) -- (Pxy);
+  \draw[dashed] (O) to node[midway,above]{$\rho$} (P);
+  
+  % arcs
+  \tdplotdrawarc[->]{(O)}{0.2}{0}{\phivec}
+    {anchor=north}{$\lambda$}
+  \tdplotsetthetaplanecoords{\phivec}
+  \tdplotdrawarc[->,tdplot_rotated_coords]{(0,0,0)}{0.2}{0}{\thetavec}
+    {anchor=south west}{\hspace{-1mm}$\theta$}
+\end{tikzpicture}

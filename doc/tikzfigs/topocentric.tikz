@@ -1,0 +1,60 @@
+\pgfplotsset{compat=1.6}
+\begin{tikzpicture}
+\begin{axis}
+  [view={135}{20},
+    axis lines=center, axis on top,ticks=none,
+    set layers=default,axis equal,
+    xlabel={$X$}, ylabel={$Y$}, zlabel={$Z$},
+    xlabel style={anchor=south east},
+    ylabel style={anchor=south west},
+    zlabel style={anchor=south west},
+    enlargelimits,
+    tick align=inside,
+    domain=0:2.00,
+    samples=20, 
+    z buffer=sort,
+  ]
+  \addplot3 [surf,opacity=0.1,domain=0:1,
+    domain y=0:90,on layer=axis foreground] ({sin(y)*sqrt(1-x^2)},{2*cos(y)*sqrt(1-x^2)},{x});
+\end{axis}
+\end{tikzpicture}
+
+%\tdplotsetmaincoords{80}{120}
+%%
+%\pgfmathsetmacro{\rvec}{1.2}
+%\pgfmathsetmacro{\thetavec}{40}
+%\pgfmathsetmacro{\phivec}{60}
+%\pgfmathsetmacro{\smajor}{1}
+%\pgfmathsetmacro{\sminor}{1}
+%%
+%\begin{tikzpicture}[scale=5,tdplot_main_coords]
+%  \coordinate (O) at (0,0,0);
+%  \draw[thick,->] (0,0,0) -- (1,0,0) node[anchor=north east]{$x$};
+%  \draw[thick,->] (0,0,0) -- (0,1,0) node[anchor=north west]{$y$};
+%  \draw[thick,->] (0,0,0) -- (0,0,1) node[anchor=south]{$z$};
+%  
+%  \tdplotsetcoord{P}{\rvec}{\thetavec}{\phivec}
+%  \draw[-stealth,color=black] (O) -- (P);
+%  \draw[dashed, color=black] (O) -- (Pxy);
+%  \draw[dashed, color=black] (P) -- (Pxy);
+%  \tdplotdrawarc{(O)}{0.2}{0}{\phivec}{anchor=north}{$\lambda$}
+%  
+%  %\tdplotsetthetaplanecoords{\phivec}
+%  %\tdplotdrawarc[tdplot_rotated_coords]{(0,0,0)}{0.5}{0}%
+%  %{\thetavec}{anchor=south west}{$\theta$}
+%  %\draw[dashed,tdplot_rotated_coords] (\rvec,0,0) arc (0:90:\rvec);
+%  %\draw[dashed] (\rvec,0,0) arc (0:90:\rvec);
+%  %\tdplotsetrotatedcoords{\phivec}{\thetavec}{0}
+%  %\tdplotsetrotatedcoordsorigin{(P)}
+%  %\draw[thick,tdplot_rotated_coords,->] (0,0,0) -- (.5,0,0) node[anchor=north west]{$x’$};
+%  %\draw[thick,tdplot_rotated_coords,->] (0,0,0) -- (0,.5,0) node[anchor=west]{$y’$};
+%  %\draw[thick,tdplot_rotated_coords,->] (0,0,0) -- (0,0,.5) node[anchor=south]{$z’$};
+%  %\draw[-stealth,color=blue,tdplot_rotated_coords] (0,0,0) -- (.2,.2,.2);
+%  %\draw[dashed,color=blue,tdplot_rotated_coords] (0,0,0) -- (.2,.2,0);
+%  %\draw[dashed,color=blue,tdplot_rotated_coords] (.2,.2,0) -- (.2,.2,.2);
+%  %\tdplotdrawarc[tdplot_rotated_coords,color=blue]{(0,0,0)}{0.2}{0}%
+%  %{45}{anchor=north west,color=black}{$\phi’$}
+%  %\tdplotsetrotatedthetaplanecoords{45}
+%  %\tdplotdrawarc[tdplot_rotated_coords,color=blue]{(0,0,0)}{0.2}{0}%
+%  %{55}{anchor=south west,color=black}{$\theta’$}
+%\end{tikzpicture}

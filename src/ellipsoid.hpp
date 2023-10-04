@@ -178,6 +178,26 @@ template <ellipsoid E> double N(double lat) noexcept {
   return core::N(lat, ellipsoid_traits<E>::a, semi_minor<E>());
 }
 
+/* @brief Compute the normal radius of curvature at a given latitude (on a
+ *        reference ellipsoid).
+ *
+ * This version also returns the trigonometric numbers of lat (i.e. 
+ * sin(latitude) and cos(latitude)). We already take the time to compute them, 
+ * so if needed they can later be used.
+ *
+ * @param[in] lat The latitude in [rad].
+ * @param[out] clat Cosinus of latitude
+ * @[aram[out] slat Sinus of latitude
+ * @tparam    E   The reference ellipsoid (i.e. one of dso::ellipsoid).
+ * @return        The normal radius of curvature in [m].
+ *
+ * @see dso::core::N
+ */
+template <ellipsoid E>
+double N(double lat, double &clat, double &slat) noexcept {
+  return core::N(lat, ellipsoid_traits<E>::a, semi_minor<E>(), clat, slat);
+}
+
 /* @brief Compute the geocentric latitude at some geodetic latitude on the
  *        ellipsoid (that is ellipsoidal height = 0).
  *
@@ -231,15 +251,15 @@ constexpr
   return std::atan(z / rho);
 }
 
-/// @brief Compute the parametric or reduced latitude at some geodetic latitude
-///        on the ellipsoid
-///
-/// @tparam    E   The reference ellipsoid (i.e. one of dso::ellipsoid).
-/// @param[in] lat The geodetic latitude in radians
-/// @return        The parametric or reduced latitude in radians
-/// @throw     Does not throw.
-///
-/// @see dso::core::reduced_latitude
+/* @brief Compute the parametric or reduced latitude at some geodetic latitude
+ *        on the ellipsoid
+ *
+ * @tparam    E   The reference ellipsoid (i.e. one of dso::ellipsoid).
+ * @param[in] lat The geodetic latitude in [rad]
+ * @return        The parametric or reduced latitude in radians
+ *
+ * @see dso::core::reduced_latitude
+ */
 template <ellipsoid E>
 #if defined(__GNUC__) && !defined(__llvm__)
 constexpr
@@ -249,36 +269,44 @@ constexpr
   return core::reduced_latitude(lat, ellipsoid_traits<E>::f);
 }
 
-/// @brief Compute the meridional radii of curvature at a given latitude (on a
-///        reference ellipsoid).
-///
-/// @param[in] lat The latitude in radians.
-/// @tparam    E   The reference ellipsoid (i.e. one of dso::ellipsoid).
-/// @return        The meridional radius of curvature in meters.
-///
-/// @see dso::core::M
+/* @brief Compute the meridional radii of curvature at a given latitude (on a
+ *        reference ellipsoid).
+ *
+ * @param[in] lat The latitude in [rad].
+ * @tparam    E   The reference ellipsoid (i.e. one of dso::ellipsoid).
+ * @return        The meridional radius of curvature in [m].
+ *
+ * @see dso::core::M
+ */
 template <ellipsoid E> double M(double lat) noexcept {
   return core::M(lat, ellipsoid_traits<E>::a, semi_minor<E>());
 }
 
-/// @brief Compute mean earth radius; in geophysics, the International Union of
-///        Geodesy and Geophysics (IUGG) defines the mean radius (denoted R1)
-///        to be: \f$ R1 = (2\alpha + b) / 3 \f$
-/// @tparam    E   The reference ellipsoid (i.e. one of dso::ellipsoid).
-/// @return        The mean earth radius (as defined by IUGG for ellipsoid E)
-///
-/// @see https://en.wikipedia.org/wiki/Earth_radius#Mean_radius
+/* @brief Compute mean earth radius; in geophysics, the International Union of
+ *        Geodesy and Geophysics (IUGG) defines the mean radius (denoted R1)
+ *        to be: \f$ R1 = (2\alpha + b) / 3 \f$
+ * @tparam    E   The reference ellipsoid (i.e. one of dso::ellipsoid).
+ * @return        The mean earth radius (as defined by IUGG) in [m]
+ *
+ * @see https://en.wikipedia.org/wiki/Earth_radius#Mean_radius
+ */
 template <ellipsoid E> constexpr double mean_earth_radius() noexcept {
   return 2e0 * ellipsoid_traits<E>::a / 3e0 + semi_minor<E>() / 3e0;
 }
 
-/// @brief Arc length of an infinitesimal element of the meridian
-///
-/// @param[in] lat  Latitude of the reference point in radians
-/// @param[in] dlat Lattitude difference, i.e. arc length on the meridian
-/// @return         Arc length (on meridian) in meters
-/// @warning This formula is valid for infinitesimal latitude differences
-/// @see https://en.wikipedia.org/wiki/Meridian_arc
+/* @brief Arc length of an infinitesimal element along a meridian.
+ *
+ * For infinitesimal arcs, the arc length can be computed as:
+ * δL = δφ * M(φ), where M(φ) is the meridional radius of curvature at the 
+ * given latitude.
+ *
+ * @param[in] lat  Latitude of the reference point in [rad]
+ * @param[in] dlat Lattitude difference, i.e. δφ along the meridian in [rad]
+ * @return         Arc length (on meridian) in [m]
+ *
+ * @warning This formula is valid for infinitesimal latitude differences
+ * @see https://en.wikipedia.org/wiki/Meridian_arc
+ */
 template <ellipsoid E, typename T,
           typename = std::enable_if_t<std::is_floating_point<T>::value>>
 T infinitesimal_meridian_arc(T lat, T dlat) noexcept {
@@ -286,11 +314,16 @@ T infinitesimal_meridian_arc(T lat, T dlat) noexcept {
   return M_ * dlat;
 }
 
-/// @brief Arc length on parallel
-///
-/// @param[in] lat  Latitude of the parallel (radians)
-/// @param[in] dlon Longtitude difference (radians)
-/// @return         Arc length (on parallel) in meters
+/* @brief Arc length on parallel.
+ *
+ * Along a parallel, a change δλ in longitude will correspond to a circular 
+ * arc dL (in a plane perpendicular to the polar axis), given by:
+ * dL = δλ * N(φ) * cos(φ), where N(φ) is the normal radius of curvature.
+ *
+ * @param[in] lat  Latitude of the parallel [rad]
+ * @param[in] dlon Longtitude difference [rad]
+ * @return         Arc length (on parallel) in [m]
+ */
 template <ellipsoid E, typename T,
           typename = std::enable_if_t<std::is_floating_point<T>::value>>
 T parallel_arc_length(T lat, T dlon) noexcept {
@@ -299,22 +332,24 @@ T parallel_arc_length(T lat, T dlon) noexcept {
   return N_ * cosf * dlon;
 }
 
-/// @class Ellipsoid
-///
-/// A class to represent a reference ellipsoid. An ellipsoid is defined by
-/// two parameters, namely:
-/// * semi-major axis, \f$ \alpha \f$ aka the equatorial radius of the ellipsoid
-/// * flattening, f aka \f$ f = \frac{\alpha - \beta}{\alpha} \f$
-///
-/// Users can construct the commonly used ellipsoids in Geodesy (grs80,
-/// wgs84 and pz90) via the dso::ellipsoid enums, or any other ellipsoid
-/// of choice, by passing in the fundamental arguments (a and f).
+/* @class Ellipsoid
+ *
+ * A class to represent a reference ellipsoid. An ellipsoid is defined by
+ * two parameters, namely:
+ * * semi-major axis, \f$ \alpha \f$ aka the equatorial radius of the ellipsoid
+ * * flattening, f aka \f$ f = \frac{\alpha - \beta}{\alpha} \f$
+ *
+ * Users can construct the commonly used ellipsoids in Geodesy (grs80,
+ * wgs84 and pz90) via the dso::ellipsoid enums, or any other ellipsoid
+ * of choice, by passing in the fundamental arguments (a and f).
+ */
 class Ellipsoid {
 public:
-  /// @brief  Constructor from an dso::ellipsoid enum
-  /// @param[in] e An dso::ellipsoid; fundamental geometric constants are
-  ///              automatically assigned via the dso::ellipsoid_traits
-  ///              class.
+  /* @brief  Constructor from an dso::ellipsoid enum
+   * @param[in] e An dso::ellipsoid; fundamental geometric constants are
+   *              automatically assigned via the dso::ellipsoid_traits
+   *              class.
+   */
   explicit constexpr Ellipsoid(ellipsoid e) noexcept : __a(0e0), __f(0e0) {
     switch (e) {
     case ellipsoid::grs80:
@@ -332,90 +367,103 @@ public:
     }
   }
 
-  /// @brief  User-defined instance.
-  /// @param[in] a The semi-major axis (meters)
-  /// @param[in] f The flattening
+  /* @brief  User-defined instance.
+   * @param[in] a The semi-major axis [m]
+   * @param[in] f The flattening
+   */
   constexpr Ellipsoid(double a, double f) noexcept : __a(a), __f(f){};
 
-  /// @brief  Get the semi-major axis \f$ \alpha \f$
-  /// @return The semi-major axis (meters)
+  /* @brief  Get the semi-major axis \f$ \alpha \f$
+   * @return The semi-major axis [m]
+   */
   constexpr double semi_major() const noexcept { return __a; }
 
-  /// @brief  Get the flattening
-  /// @return The flattening
+  /* @brief  Get the flattening
+   * @return The flattening
+   */
   constexpr double flattening() const noexcept { return __f; }
 
-  /// @brief  Get the squared eccentricity \f$ e^2 \f$
-  /// @return Eccentricity aquared
-  /// @see dso::core::eccentricity_squared
+  /* @brief  Get the squared eccentricity \f$ e^2 \f$
+   * @return Eccentricity aquared
+   * @see dso::core::eccentricity_squared
+   */
   constexpr double eccentricity_squared() const noexcept {
     return core::eccentricity_squared(__f);
   }
 
-  /// @brief  Get the semi-minor axis \f$ \beta \f$
-  /// @return Semi-minor axis (meters)
-  /// @see dso::core::semi_minor
+  /* @brief  Get the semi-minor axis \f$ \beta \f$
+   * @return Semi-minor axis [m]
+   * @see dso::core::semi_minor
+   */
   constexpr double semi_minor() const noexcept {
     return core::semi_minor(__a, __f);
   }
 
-  /// @brief Get the third flattening \f$ n \f$
-  /// @return The third flattening
-  /// @see dso::core::third_flattening
+  /* @brief Get the third flattening \f$ n \f$
+   * @return The third flattening
+   * @see dso::core::third_flattening
+   */
   constexpr double third_flattening() const noexcept {
     return core::third_flattening(__f);
   }
 
-  /// @brief Compute the geocentric latitude at some (geodetic) latitude
-  /// @param[in] lat The geodecit latitude
-  /// @return        The geocentric latitude at lat
+  /* @brief Compute the geocentric latitude at some (geodetic) latitude
+   * @param[in] lat The geodecit latitude [rad]
+   * @return        The geocentric latitude at lat [rad]
+   */
   double geocentric_latitude(double lat) const noexcept {
     return core::geocentric_latitude(lat, __f);
   }
 
-  /// @brief Compute the reduced latitude at some (geodetic) latitude
-  /// @param[in] lat The geodecit latitude
-  /// @return        The reduced latitude at lat
+  /* @brief Compute the reduced latitude at some (geodetic) latitude
+   * @param[in] lat The geodeci latitude [rad]
+   * @return        The reduced latitude at lat [rad]
+   */
   double reduced_latitude(double lat) const noexcept {
     return core::reduced_latitude(lat, __f);
   }
 
-  /// @brief  Compute the normal radius of curvature at a given latitude
-  ///
-  /// @param[in] lat The latitude in radians.
-  /// @return        The normal radius of curvature in meters.
-  ///
-  /// @see dso::core::N
+  /* @brief  Compute the normal radius of curvature at a given latitude
+   * 
+   * @param[in] lat The latitude in radians [rad]
+   * @return        The normal radius of curvature in [m]
+   *
+   * @see dso::core::N
+   */
   double N(double lat) const noexcept {
     return core::N(lat, __a, this->semi_minor());
   }
 
-  /// @brief  Compute the meridional radii of curvature at a given latitude
-  ///
-  /// @param[in] lat The latitude in radians.
-  /// @return        The meridional radius of curvature in meters.
-  ///
-  /// @see dso::core::M
+  /* @brief  Compute the meridional radii of curvature at a given latitude
+   * 
+   * @param[in] lat The latitude in [rad]
+   * @return        The meridional radius of curvature in [m]
+   * 
+   * @see dso::core::M
+   */
   double M(double lat) const noexcept {
     return core::M(lat, __a, this->semi_minor());
   }
 
-  /// @brief Compute mean earth radius; in geophysics, the International Union
-  /// of
-  ///        Geodesy and Geophysics (IUGG) defines the mean radius (denoted R1)
-  ///        to be: \f$ R1 = (2\alpha + b) / 3 \f$
-  /// @tparam    E   The reference ellipsoid (i.e. one of dso::ellipsoid).
-  /// @return        The mean earth radius (as defined by IUGG for ellipsoid E)
-  ///
-  /// @see https://en.wikipedia.org/wiki/Earth_radius#Mean_radius
+  /* @brief Compute mean earth radius. 
+   *
+   * In geophysics, the International Union of Geodesy and Geophysics (IUGG) 
+   * defines the mean radius (denoted R1) to be: 
+   * \f$ R1 = (2\alpha + b) / 3 \f$
+   *
+   * @tparam    E   The reference ellipsoid (i.e. one of dso::ellipsoid).
+   * @return        The mean earth radius (as defined by IUGG) in [m]
+   *
+   * @see https://en.wikipedia.org/wiki/Earth_radius#Mean_radius
+   */
   constexpr double mean_earth_radius() const noexcept {
     return 2e0 * __a / 3e0 + this->semi_minor() / 3e0;
   }
 
 private:
   double __a, __f;
-}; // Ellipsoid
+}; /* class Ellipsoid */
 
-} // namespace dso
+} /* namespace dso */
 
 #endif

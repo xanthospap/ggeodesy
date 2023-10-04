@@ -1,0 +1,49 @@
+\begin{tikzpicture}
+
+  \pgfmathsetmacro{\semimajor}{+3.0000000000};
+  \pgfmathsetmacro{\semiminor}{+2.1424285286};
+  \pgfmathsetmacro{\eccentricity}{0.70};
+  \coordinate (N)  at (+2.0000000000, +2.2360679775);
+  \coordinate (M)  at (+2.0000000000, +1.5968719423);
+  \coordinate (T)  at (+4.5000000000, +0.0000000000);
+  \coordinate (TC) at (+1.0000000000, +3.1304951685);
+  \coordinate (TE) at (+1.0000000000, +2.2356207192);
+  \coordinate (XEND) at (+5.2141428429, +0.0000000000);
+  \coordinate (I) at (+0.0000000000, -1.5342495132);
+  \coordinate (II) at (+0.9800000000, +0.0000000000);
+  \coordinate (TXT) at (-1.0712142643, -1.0228330088);
+  \coordinate (MP) at (+2.0000000000, +0.0000000000);
+
+  \node (t) at (T) [above]{T};
+  \node (m) at (M) [above]{M};
+  \node (n) at (N) [above]{N};
+  \node (a) at (\semimajor,0) [below, right]{A};
+  \node (i) at (I) [left]{I};
+  %\node (tc) at (TC) {TC};
+  %\node (te) at (TE) {TE};
+  \node (txt) at (TXT) {$e=$\eccentricity};
+  \coordinate (O) at (0e0,0e0);
+  
+  \draw (0,0) ellipse (\semimajor cm and \semiminor cm);
+  \draw (0,0) circle (\semimajor);
+  
+  \draw[->] ($(-\semimajor -1 , 0)$)--(XEND) node[right]{$x$};
+  \draw[->] ($(0, -\semimajor -1)$)--($(0, \semimajor +1)$) node[right]{$y$};
+
+  \draw (TC) -- (T);
+  \draw (TE) -- (T);
+  \draw (N) -- (O);
+  \draw (M) -- (O);
+  \draw (M) -- (I);
+  \draw[dotted] (N) -- (M) -- (MP);
+
+  \tkzMarkRightAngle[draw=black,size=.2](T,N,O);
+  \tkzMarkRightAngle[draw=black,size=.2](T,M,I);
+  \tkzMarkAngle[size = .5, arc=ll](T,O,M)
+  \tkzLabelAngle[pos=.7](T,O,M){$\psi$};
+  \tkzMarkAngle[size = .9, arc=l](T,O,N)
+  \tkzLabelAngle[pos=1.0](T,O,N){$u$};
+  \tkzMarkAngle[size = .5, arc=l](T,II,M)
+  \tkzLabelAngle[pos=.9](T,II,M){$\phi$};
+
+\end{tikzpicture}

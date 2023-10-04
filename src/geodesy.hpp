@@ -1,12 +1,14 @@
-/// @file geodesy.hpp
-/// @brief A list of frequently used geodetic functions.
-/// @see http://www.movable-type.co.uk/scripts/latlong.html
+/** @file
+ * A list of frequently used geodetic functions, including coordinate 
+ * transformations.
+ */
 
 #ifndef __NGPT_GEODESY_HPP__
 #define __NGPT_GEODESY_HPP__
 
 #include "eigen3/Eigen/Eigen"
 #include "ellipsoid.hpp"
+#include "units.hpp"
 #include "geoconst.hpp"
 #include <cassert>
 #include <cmath>
@@ -15,119 +17,255 @@
 
 namespace dso {
 
-/// @brief Given the geodetic coordinates of a reference point, return the
-///        matrix that turns any vector from the ference point to point P to
-///        topocentric coordinates (e,n,u)
-Eigen::Matrix<double, 3, 3> topocentric_matrix(double lambda,
-                                               double phi) noexcept;
+/** @brief Rotation matrix to transform cartesian to topocentric (n,e,u).
+ *
+ * Given the geodetic coordinates of a reference point, return the matrix that 
+ * turns any vector from the reference point to point P to topocentric 
+ * coordinates (n,e,u).
+ * 
+ * @param[in] lon The longitude of the reference point [rad].
+ * @param[in] lat The geodetic latitude of the reference point [rad].
+ * @return A 3x3 rotation matrix R that acts in the sense:
+ *         \f [n,e,u]^T = R * [x,y,z]^T \f
+ */
+Eigen::Matrix<double, 3, 3> topocentric_matrix(double lon,
+                                               double lat) noexcept;
 
+/** @brief Rotation matrix to transform cartesian to topocentric (n,e,u).
+ *
+ * Given the geodetic coordinates of a reference point, return the matrix that 
+ * turns any vector from the reference point to point P to topocentric 
+ * coordinates (n,e,u).
+ * 
+ * @param[in] geodetic A 3x1 vector containing the geodetic coordinates of the 
+ *            reference point, in the sense: (λ, φ, h) in [rad], [rad], [m].
+ * @return A 3x3 rotation matrix R that acts in the sense:
+ *         \f [n,e,u]^T = R * [x,y,z]^T \f
+ */
 inline Eigen::Matrix<double, 3, 3>
-topocentric_matrix(const Eigen::Matrix<double, 3, 1> &lfh) noexcept {
-  return topocentric_matrix(lfh(0), lfh(1));
+topocentric_matrix(const Eigen::Matrix<double, 3, 1> &geodetic) noexcept {
+  return topocentric_matrix(geodetic(0), geodetic(1));
 }
 
-/// @brief Ellipsoidal to cartesian coordinates.
-///
-/// Transform (geocentric) cartesian coordinates (on the ellipsoid) to
-/// ellipsoidal coordinates. Units are meters and radians.
-///
-/// @tparam      E      The reference ellipsoid (i.e. one of dso::ellipsoid).
-/// @param[in]   phi    Ellipsoidal latitude (radians)
-/// @param[in]   lambda Ellipsoidal longtitude (radians)
-/// @param[in]   h      Ellipsoidal height (meters)
-/// @param[out]  x      Cartesian x-component (meters)
-/// @param[out]  y      Cartesian y-component (meters)
-/// @param[out]  z      Cartesian z-component (meters)
-/// @throw              Does not throw.
-///
-template <ellipsoid E>
-void ell2car(double lambda, double phi, double h, double &x, double &y,
-             double &z) noexcept {
-  // Eccentricity squared.
-  constexpr double e2{dso::eccentricity_squared<E>()};
+/** @brief Topocentric unit vectors (n,e,u).
+ *
+ * Given the geodetic coordinates of a reference point, return the topocentric
+ * unit vectors, i.e. (n, e, u) each with norm=1. The cartesian to topocentric
+ * matrix that turns any vector from the reference point to point P to 
+ * topocentric coordinates (e',n',u') is then 
+ * \f R = [n^T, e^T, u^T] = [n,e,u]^T \f
+ * 
+ * @param[in] lon The longitude of the reference point [rad].
+ * @param[in] lat The geodetic latitude of the reference point [rad].
+ * @return A 3x3 matrix R, where each column is the n, e, u unit vectors, i.e. 
+ *         in the form: \f R = [n,e,u] \f
+ */
+inline Eigen::Matrix<double, 3, 3>
+topocentric_unit_vectors(double lon, double lat) noexcept {
+  return topocentric_matrix(lon, lat).transpose();
+}
 
-  // Radius of curvature in the prime vertical.
-  const double N{dso::N<E>(phi)};
+namespace core {
 
-  // Trigonometric numbers.
-  const double sinf{std::sin(phi)};
-  const double cosf{std::cos(phi)};
-  const double sinl{std::sin(lambda)};
-  const double cosl{std::cos(lambda)};
+/** @brief Geodetic to cartesian coordinates.
+ *
+ * Transform (geocentric) cartesian coordinates (on the ellipsoid) to
+ * geodetic coordinates. Units are meters and radians.
+ *
+ * @tparam      E      The reference ellipsoid (i.e. one of dso::ellipsoid).
+ * @param[in]   lambda Longtitude [rad]
+ * @param[in]   phi    Geodetic latitude [rad]
+ * @param[in]   h      Ellipsoidal height [m]
+ * @param[in]   e2     Eccentricity squared (of reference ellipsoid)
+ * @param[in]   N      Prime vertical radius of curvature at phi [m]
+ * @param[out]  x      Cartesian x-component [m]
+ * @param[out]  y      Cartesian y-component [m]
+ * @param[out]  z      Cartesian z-component [m]
+ */
+void geodetic2cartesian(double lambda, double phi, double h, double e2,
+                        double N, double &x, double &y, double &z) noexcept {
+  /* Trigonometric numbers. */
+  const double sinf=std::sin(phi);
+  const double cosf=std::cos(phi);
+  const double sinl=std::sin(lambda);
+  const double cosl=std::cos(lambda);
 
-  // Compute geocentric rectangular coordinates.
+  /* Compute geocentric rectangular coordinates. */
   x = (N + h) * cosf * cosl;
   y = (N + h) * cosf * sinl;
   z = ((1e0 - e2) * N + h) * sinf;
 
-  // Finished.
+  /* Finished. */
+  return;
+}
+} /* namespace core */
+
+/** @brief Geodetic to cartesian coordinates.
+ *
+ * Transform (geocentric) cartesian coordinates (on the ellipsoid) to
+ * geodetic coordinates. Units are meters and radians.
+ *
+ * @tparam      E      The reference ellipsoid (i.e. one of dso::ellipsoid).
+ * @param[in]   longitude Longtitude [rad]
+ * @param[in]   latitude  Geodetic latitude [rad]
+ * @param[in]   eheight   Ellipsoidal height [m]
+ * @param[out]  x         Cartesian x-component [m]
+ * @param[out]  y         Cartesian y-component [m]
+ * @param[out]  z         Cartesian z-component [m]
+ */
+template <ellipsoid E>
+void ell2car(double longitude, double latitude, double eheight, double &x,
+             double &y, double &z) noexcept {
+  /* Eccentricity squared. */
+  constexpr double e2 = dso::eccentricity_squared<E>();
+
+  /* Radius of curvature in the prime vertical. */
+  const double N = dso::N<E>(latitude);
+
+  /* transform */
+  core::geodetic2cartesian(longitude, latitude, eheight, e2, N, x, y, z);
+
+  /* Finished. */
   return;
 }
 
+/** @brief Geodetic to cartesian coordinates.
+ *
+ * Transform (geocentric) cartesian coordinates (on the ellipsoid) to
+ * geodetic coordinates. Units are meters and radians.
+ *
+ * @tparam      E      The reference ellipsoid (i.e. one of dso::ellipsoid).
+ * @param[in]   geodetic A vector holding geodetic coordinates, as: (λ, φ, h);
+ *                     λ (i.e. longitude) and φ (i.e. geodetic latitude) 
+ *                     should be in [rad], and h (i.e. geodetic height) in [m].
+ * @return A 3-D vector containing the corresponding cartesian components in
+ *                     [m].
+ */
 template <ellipsoid E>
 Eigen::Matrix<double, 3, 1>
-ell2car(const Eigen::Matrix<double, 3, 1> &lfh) noexcept {
-  // Eccentricity squared.
-  constexpr double e2{dso::eccentricity_squared<E>()};
-
-  // Radius of curvature in the prime vertical.
-  const double N{dso::N<E>(lfh(1))};
-
-  // Trigonometric numbers.
-  const double sinf{std::sin(lfh(1))};
-  const double cosf{std::cos(lfh(1))};
-  const double sinl{std::sin(lfh(0))};
-  const double cosl{std::cos(lfh(0))};
-
-  // Compute geocentric rectangular coordinates.
-  const double x = (N + lfh(2)) * cosf * cosl;
-  const double y = (N + lfh(2)) * cosf * sinl;
-  const double z = ((1e0 - e2) * N + lfh(2)) * sinf;
-
-// Finished.
-  /*const*/ double data[] = {x, y, z};
-  return Eigen::Map<Eigen::Matrix<double, 3, 1>>(data, 3);
+ell2car(const Eigen::Matrix<double, 3, 1> &geodetic) noexcept {
+  Eigen::Matrix<double, 3, 1> xyz;
+  ell2car(geodetic(0), geodetic(1), geodetic(2), xyz(0), xyz(1), xyz(2));
+  return xyz;
 }
 
-void ell2car(double lambda, double phi, double h, const Ellipsoid &e, double &x,
-             double &y, double &z) noexcept;
+/** @brief Geodetic to cartesian coordinates.
+ *
+ * Transform (geocentric) cartesian coordinates (on the ellipsoid) to
+ * geodetic coordinates. Units are meters and radians.
+ *
+ * @tparam      E      The reference ellipsoid (i.e. one of dso::ellipsoid).
+ * @param[in]   longitude Longtitude [rad]
+ * @param[in]   latitude  Geodetic latitude [rad]
+ * @param[in]   eheight   Ellipsoidal height [m]
+ * @param[out]  x      Cartesian x-component [m]
+ * @param[out]  y      Cartesian y-component [m]
+ * @param[out]  z      Cartesian z-component [m]
+ * @param[in]   e      The reference ellipsoid (dso::Ellipsoid)
+ */
+void ell2car(double longitude, double latitude, double eheight,
+             const Ellipsoid &e, double &x, double &y, double &z) noexcept;
+
+/** @brief Geodetic to cartesian coordinates.
+ *
+ * Transform (geocentric) cartesian coordinates (on the ellipsoid) to
+ * geodetic coordinates. Units are meters and radians.
+ *
+ * @tparam      E      The reference ellipsoid (i.e. one of dso::ellipsoid).
+ * @param[in]   lfh    A vector holding geodetic coordinates, as: (λ, φ, h);
+ *                     λ (i.e. longitude) and φ (i.e. geodetic latitude)
+ *                     should be in [rad], and h (i.e. geodetic height) in [m].
+ * @param[in]   e      The reference ellipsoid (dso::Ellipsoid)
+ * @return A 3-D vector containing the corresponding cartesian components in
+ *                     [m].
+ */
 Eigen::Matrix<double, 3, 1> ell2car(const Eigen::Matrix<double, 3, 1> &lfh,
                                     const Ellipsoid &e) noexcept;
 
-/// @brief Topocentric vector to azimouth, zenith and distance.
-///
-/// Compute the Distance, Azimouth and Zenith distance given a vector expressed
-/// in a local, topocentric system (i.e. given the north, east and up
-/// components of the vector).
-///
-/// @param[in]  north    Vector north component (meters)
-/// @param[in]  east     Vector east component (meters)
-/// @param[in]  up       Vector up component (meters)
-/// @param[out] distance The length of the vector (meters)
-/// @param[out] azimouth The azimouth of the vector, radians [0,2*pi).
-/// @param[out] zenith   The zenith distance, radians [0,pi)
-/// @throw               std::runtime_error if zero division encountered.
-///
-/// @see "Physical Geodesy", pg. 210
-///
-double top2daz(double east, double north, double up, double &azimouth,
-               double &zenith);
-
-inline double top2daz(const Eigen::Matrix<double, 3, 1> &enu, double &azimouth,
-                      double &zenith) {
-  return top2daz(enu(0), enu(1), enu(2), azimouth, zenith);
+/** @brief Cartesian to spherical coordinates.
+ * 
+ * Transform cartesian coordinates (x,y,z) to spherical coordinates (r, θ, λ), 
+ * where r is the radial distance, θ is the polar distance and λ is the 
+ * geocentric longitude.
+ * Note, to compute the geocentric latitude from polar distance:
+ * φ = 90 - θ
+ * Transformation formulas are given in:
+ * https://mathworld.wolfram.com/SphericalCoordinates.html
+ *
+ * @param[in] xyz Cartesian coordinates vector (x,y,z)
+ * @return Spherical coordinate vector (r, θ, λ) where:
+ *         r is in [m],r >= 0
+ *         θ in [rad] in range [0, π], and
+ *         λ in [rad] in range [-π, π]
+ */
+inline Eigen::Matrix<double, 3, 1>
+car2sph(const Eigen::Matrix<double, 3, 1> &xyz) noexcept {
+  const double r = xyz.norm();
+  const double x = xyz(0);
+  const double y = xyz(1);
+  const double z = xyz(2);
+  const double theta = std::acos(z/r);
+  const double lambda = std::atan2(y, x);
+  return Eigen::Matrix<double, 3, 1>(r, theta, lambda);
 }
 
-/// @brief Compute distance, azimouth and elevation from topocentric vector
-/// @param[in] enu Vector of size >= 3, containing East, North and Up
-///                 coordinates in [m]
-/// @param[out] distance  The distance/norm of the topocentric vector [m]
-/// @param[out] azimouth  The azimouth between the two points (in the
-///                       topocentric frame) in [rad]. Range [0,2π]
-/// @param[out] elevation The elevation between the two points of the vector
-///                       in [rad]. Range [0, π]
-double top2dae(const Eigen::Matrix<double, 3, 1> &enu, double &azimouth,
-               double &elevation);
+/** @brief Spherical to cartesian coordinates.
+ * 
+ * Transform spherical coordinates (r, θ, λ) to cartesian coordinates (x,y,z) 
+ * where r is the radial distance, θ is the polar distance and λ is the 
+ * geocentric longitude.
+ * Note, to compute the geocentric latitude from polar distance:
+ * φ = 90 - θ
+ * Transformation formulas are given in:
+ * https://mathworld.wolfram.com/SphericalCoordinates.html
+ *
+ * @param[in] sph Spherical coordinate vector (r, θ, λ) where:
+ *         r is in [m], r >= 0
+ *         θ in [rad] 
+ *         λ in [rad] 
+ * @return Cartesian components vector, (x,y,z) in [m]
+ */
+inline Eigen::Matrix<double,3,1>
+sph2car(const Eigen::Matrix<double, 3, 1> &sph) noexcept {
+  const double r = sph(0);
+  const double theta = sph(1);
+  const double lambda = sph(2);
+  const double ct = std::cos(theta);
+  const double st = std::sin(theta);
+  const double cl = std::cos(lambda);
+  const double sl = std::sin(lambda);
+  return Eigen::Matrix<double, 3, 1>(r*sl*st, r*sl*st, r*ct);
+}
+
+struct AzEl {
+  /** distance between Pi and Pj */
+  double sij;
+  /** azimouth from Pi to Pj in [rad] in range [0, 2π] */
+  double aij;
+  /** zenith angle of the vector from Pi to Pj [rad] in range [0, π] */
+  double zij;
+}; /* AzEl */
+
+/** @brief Transform local tangent [n,e,u] to range, azimouth and zenith angle.
+ *
+ * Given a set of local tangent coordinates, i.e. along the north, east and 
+ * up directions [n,e,u], compute the distance, azimouth and zenith angle.
+ * If the [n,e,u] coordinates correspond to a vector Rij, that is a vector 
+ * from point Pi (origin/reference) to a point Pj, then the azimouth will be
+ * Aij.
+ *
+ * @param[in] neu Local tangent North, East and Up coordinates of the vector
+ *                from point Pi (origin/reference) to point Pj, in [m].
+ * @param[out] An AzEl instance. 
+ */
+inline
+AzEl neu2azel(const Eigen::Matrix<double, 3, 1> &neu) noexcept {
+  AzEl azel;
+  azel.sij = neu.norm();
+  azel.aij = dso::anp(std::atan2(neu(1), neu(0)));
+  azel.zij = std::acos(neu(2)/azel.sij);
+  return azel;
+}
 
 /// @brief Compute distance, azimouth and elevation from topocentric vector and
 ///        their partial derivatives w.r.t the topocentic RF
@@ -250,54 +388,6 @@ void car2ell(double x, double y, double z, double semi_major, double flattening,
 Eigen::Matrix<double, 3, 1> car2ell(const Eigen::Matrix<double, 3, 1> &xyz,
                                     double semi_major,
                                     double flattening) noexcept;
-
-/// @brief Cartesian to Spherical, given the radius
-/// See Physical Geodesy, Section 1.4
-/// The returned vector is: [r, φ, λ]
-/// with r: radius vector, φ geocentric latitude and λ geocentric longitude
-inline Eigen::Matrix<double, 3, 1>
-car2sph(const Eigen::Matrix<double, 3, 1> &xyz) noexcept {
-  const double r = xyz.norm();
-  const double x = xyz(0);
-  const double y = xyz(1);
-  const double z = xyz(2);
-  // const double theta = std::atan2(std::sqrt(x * x + y * y), z);
-  const double phi = std::asin(z/r);
-  const double lambda = std::atan2(y, x);
-  // note, we are returning the geocentric latitude instead of polar distance
-  // aka φ = 90 - θ
-  return Eigen::Matrix<double, 3, 1>(r, /*DPI/2e0-theta*/phi, lambda);
-}
-
-/// The input vector is: [r, φ, λ]
-inline Eigen::Matrix<double,3,1>
-sph2car(const Eigen::Matrix<double, 3, 1> &rtl) noexcept {
-  const double r = rtl(0);
-  const double t = DPI/2e0 - rtl(1); // geocentric latitude to polar distance
-  const double l = rtl(2);
-  const double st = std::sin(t);
-  return Eigen::Matrix<double, 3, 1>(r * st * std::cos(l), r * st * std::sin(l),
-                                     r * std::cos(t));
-}
-
-/// see https://www.mathworks.com/help/phased/ref/sph2cartvec.html
-inline Eigen::Matrix<double,3,3>
-car2sph_rotation_matrix(const Eigen::Matrix<double, 3, 1> &rtl) noexcept {
-  // easy use
-  const double f = rtl(1);  // geocentric latitude
-  const double l = rtl(2);  // longitude
-  // trigonometric numbers
-  const double saz = std::sin(l);
-  const double caz = std::cos(l);
-  const double sel = std::sin(f);
-  const double cel = std::cos(f);
-  // rotation matrix, cartesian to spherical, aka 
-  // X_(r,φ,λ) = R * X_(x,y,z)
-  return Eigen::Matrix<double,3,3>{
-    {cel*caz, cel*saz, sel},
-    {-sel*caz, -sel*saz, cel},
-    {-saz, caz, 0e0} };
-}
 
 template <ellipsoid E>
 Eigen::Matrix<double, 3, 1>

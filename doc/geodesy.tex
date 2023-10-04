@@ -1,0 +1,99 @@
+\documentclass{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{amssymb}
+\usepackage{tikz} % add a few drawings ...
+\usepackage{tkz-euclide}
+\usepackage{tikz-3dplot}
+\usetikzlibrary{calc}
+\usepackage{pgfplots}
+\usepackage{xcolor}
+
+\title{Elements of geodesy}
+\date{\today}
+\author{Xanthos}
+
+\begin{document}
+  
+  \maketitle
+
+  %\frontmatter
+  \tableofcontents
+  \listoffigures
+  \listoftables
+
+  % 
+  \section{Ellipsoidal Geometry}
+  \label{ch:ellipsoidal-geometry}
+
+  \subsection{Latitude Definitions}
+  \label{ssec:latitude-definitions}
+  
+  \textbf{Geodetic latitude} $\phi$, is the angle between the normal (to the 
+  ellipsoid) and the equatorial plane.
+  \textbf{Geocentric Latitude} $\psi$ (sometimes called \emph{spherical latitude}) is 
+  the angle between the radius (from centre to the point on the surface) and 
+  the equatorial plane. It is related to \emph{geodetic latitude} by:
+  \begin{equation}
+    \psi (\phi) = \arctan{\left(\left(1-e^2\right)\tan \phi \right)} 
+      = \arctan{\left(\left(1-f\right)^2 \tan \phi \right)}
+  \end{equation}
+  The \textbf{parametric} or \textbf{reduced} latitude, $u$, is defined 
+  by the radius drawn from the centre of the ellipsoid to that point N on the 
+  surrounding sphere (of radius $\alpha$) which is the projection parallel to 
+  the Earth's axis of a point P on the ellipsoid at latitude $\phi$. The 
+  \emph{parametric latitude} is related to the \emph{geodetic latitude} by:
+  \begin{equation}
+    u(\phi) = \arctan{\left( \sqrt{1-e^2} \tan \phi \right)} 
+      = \arctan{\left(\left(1-f\right) \tan \phi \right)}
+  \end{equation}
+  Note that in astronomy, $u$ is oftenly called \textbf{eccentric anomaly} 
+  (normally denoted as $E$).
+
+  \begin{figure}
+    \centering
+      \input{tikzfigs/circle-ellipse.tikz}
+      \caption{Different latitude definitions.}
+      \label{fig:latitude-definitions}
+  \end{figure}
+  \begin{table}[h!]
+    \centering
+    \begin{tabular}{| c | c | c | c|}
+      \hline
+      \textbf{Latitude} & \textbf{Symbol} & \textbf{Reference Direction} & \textbf{Angle} \\
+      \hline
+      geocentric & $\psi$ & centre of the Earth & $\angle{AOM}$ \\
+      geodetic   & $\phi$ & normal to the ellipsoid & $\angle{OA,IM}$ \\
+      parametric & $u$    & centre of the Earth & $\angle{AON}$ \\
+      \hline
+    \end{tabular}
+    \caption{Latitude definitions, see \ref{fig:latitude-definitions}.}
+    \label{table:latitude-definitions}
+\end{table}
+  
+  \subsection{Coordinates Types}
+  \label{ssec:coordinates-types}
+  \textbf{Geodetic coordinates} $(\lambda, \phi, h)$ are a type of curvilinear 
+  orthogonal coordinate system based on a reference ellipsoid. They include the 
+  \emph{geodetic latitude} $\phi$, the \emph{longitude} $\lambda$ and the 
+  \emph{ellipsoidal height} $h$ (also known as \emph{geodetic height}). Geodetic 
+  coordinates are also commonly known as \textbf{Earth ellipsoidal coordinates}. 
+  By convention, $\lambda \in \left[-\pi, \pi \right]$ and 
+  $\phi \in \left[-\pi/2, \pi/2 \right]$.
+
+  \textbf{Spherical coordinates} are defined by the triad \emph{radial distance} 
+  $r$, \emph{polar distance} $\theta$ and \emph{geocentric longitude} $\lambda$ 
+  The polar angle may be called \emph{colatitude, zenith angle, normal angle}, or 
+  \emph{inclination angle}. It is often denoted as $\phi$, but here we will adopt 
+  the $\theta$. \emph{geocentric longitude} $\lambda$ is often also called \emph{azimouthal angle} 
+  and denoted by $\theta$.
+  \begin{figure}
+    \centering
+      \input{tikzfigs/topocentric.tikz}
+      \caption{Topocentric coordinates.}
+      \label{fig:topocentric-crd}
+  \end{figure}
+
+\end{document}

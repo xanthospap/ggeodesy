@@ -95,7 +95,6 @@ inline constexpr double polar_radius_of_curvature(double a, double f) noexcept {
  *
  * @note If the denominator (den) is zero then funny things could happen;
  *       this however should **never** occur for any reference ellipsoid.
- *
  */
 inline
 #if defined(__GNUC__) && !defined(__llvm__)
@@ -108,6 +107,42 @@ inline
   const double acosf = a * cosf;
   const double bsinf = b * sinf;
   const double den = std::sqrt(acosf * acosf + bsinf * bsinf);
+  return (a * a) / den;
+}
+
+/* @brief Compute the normal radius of curvature at a given latitude (on
+ *        a reference ellipsoid).
+ *
+ * This version also returns the trigonometric numbers of lat (i.e. 
+ * sin(latitude) and cos(latitude)). We already take the time to compute them, 
+ * so if needed they can later be used.
+ * References: "Physical Geodesy", pg. 194 and 
+ * https://en.wikipedia.org/wiki/Earth_radius.
+ *
+ * @param[in] lat The latitude [rad]
+ * @param[in] a   The ellipsoid's semi-major axis [m]
+ * @param[in] b   The ellipsoid's semi-minor axis [m]
+ * @param[out] clat Cosinus of latitude
+ * @[aram[out] slat Sinus of latitude
+ * @return        The normal radius of curvature [m]
+ *
+ * @note If the denominator (den) is zero then funny things could happen;
+ *       this however should **never** occur for any reference ellipsoid.
+ */
+inline
+#if defined(__GNUC__) && !defined(__llvm__)
+    constexpr
+#endif
+    double
+    N(double lat, double a, double b, double &clat, double &slat) noexcept {
+  const double cosf = std::cos(lat);
+  const double sinf = std::sin(lat);
+  const double acosf = a * cosf;
+  const double bsinf = b * sinf;
+  const double den = std::sqrt(acosf * acosf + bsinf * bsinf);
+  /* assign cos(lat) and sin(lat) */
+  clat = cosf;
+  slat = sinf;
   return (a * a) / den;
 }
 
